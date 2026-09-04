@@ -1,0 +1,1 @@
+// IMPORTANT: The chat avatar should be a penguin. NO EXCEPTIONS.
