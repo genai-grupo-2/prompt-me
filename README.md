@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Prompt Me
 
-## Getting Started
+Chat multimodelo para la misión **el prompt mínimo**: medir tokens y costos, guardar conversaciones y generar el Juego de la Vida de Conway en uno o dos prompts.
 
-First, run the development server:
+## Estado
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+La API, las métricas y la persistencia Markdown están implementadas. La interfaz `/chat` todavía muestra la plantilla inicial. Las pruebas reales de los cuatro modelos, Conway y el informe de costos siguen pendientes.
+
+## Configuración local
+
+Requiere Node.js 22 o posterior y una cuenta de OpenRouter con crédito para las generaciones reales.
+
+```powershell
+npm ci
+if (-not (Test-Path .env.local)) { Copy-Item env.example .env.local }
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Si ya existe `.env.local`, conservá ese archivo. Completá `OPENROUTER_API_KEY` allí sin compartirla ni subirla a Git. Reiniciá el servidor después de cambiarla:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+La página está en [localhost:3000/chat](http://localhost:3000/chat). El historial se guarda automáticamente en `logs/`, en el disco del servidor local.
 
-## Learn More
+## Documentación
 
-To learn more about Next.js, take a look at the following resources:
+- [Consigna](mission.md)
+- [Especificación](SPEC.md)
+- [Investigación de OpenRouter y modelos — 15/09/2026](docs/investigacion-openrouter.md)
+- [API, streaming, parámetros y persistencia](docs/api-chat.md)
+- [Instrucciones de desarrollo](AGENTS.md)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Verificación
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Las pruebas usan respuestas simuladas y no consumen crédito de OpenRouter. No sustituyen las pruebas reales exigidas por la consigna. La compilación de la plantilla requiere acceso a Google Fonts para descargar Geist.
