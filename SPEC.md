@@ -33,6 +33,9 @@ Si un identificador ya no está disponible, reemplazarlo por un equivalente vige
 ### 3.2. Flujo de conversación
 
 - El usuario elige un modelo, configura las opciones aplicables y envía un mensaje.
+- El presupuesto de salida (`max_tokens`) se elige por conversación. Comparte cupo con los
+  tokens de razonamiento, así que un esfuerzo alto con un presupuesto chico puede agotarlo
+  pensando y dejar la respuesta incompleta; en ese caso no se presenta como exitosa.
 - El chat muestra los mensajes del usuario y del asistente en orden, conserva el contexto de la conversación y presenta la respuesta de forma progresiva.
 - Durante una solicitud se indica el estado de generación y se evitan envíos duplicados.
 - Cambiar de modelo inicia una conversación nueva; la anterior conserva su historial y su log.
@@ -69,6 +72,14 @@ Cada log debe incluir:
 El guardado debe preservar bloques de código y contenido multilínea, evitar sobrescribir otra conversación y usar identificadores seguros para los nombres de archivo. Si falla la escritura, la interfaz debe avisarlo: una corrida sin log no cuenta como evidencia válida.
 
 Los logs de prueba y de los intentos del ejercicio 2 se incluyen en el repositorio. Nunca deben contener la clave de API.
+
+`logs/` es la fuente de verdad y el `localStorage` del navegador es sólo una caché de la
+interfaz. Al abrir la página, la interfaz sincroniza contra el servidor: las conversaciones
+presentes en disco pero ausentes en el navegador aparecen en la barra lateral y se leen
+completas al seleccionarlas; una copia local cuya cantidad de mensajes discrepa del registro
+se descarta y se vuelve a leer del log; una conversación cuyo log ya no existe desaparece
+también del navegador. Las conversaciones de una versión anterior, sin identificador de
+servidor, se conservan en modo lectura para no perder nada.
 
 ### 3.5. Arquitectura prevista
 
@@ -123,7 +134,16 @@ python3 vida.py <archivo_estado_inicial> <generaciones>
 6. Conservar todos los logs, incluidos los intentos quemados. No parchear el código a mano ni continuar una corrida con más de dos prompts.
 7. A partir del segundo intento, comprobar y registrar `cached_tokens > 0`, como exige la consigna.
 
-El archivo `test_vida.py` debe ser el original entregado por la cátedra, sin modificaciones ni sustituciones. La comprobación se realiza mediante:
+El archivo `test_vida.py` debe ser el original entregado por la cátedra, sin modificaciones ni sustituciones.
+
+Esa suite no llegó al grupo. Como sustituto, se generó desde el mismo chat con un prompt que
+transmite los nueve casos y la interfaz de invocación de la consigna, y se validó contra una
+implementación de referencia correcta —escrita aparte del entregable y descartada— para
+comprobar que los nueve casos pasan cuando el comportamiento es el correcto. La suite propia
+queda identificada como tal en el README y debe reemplazarse por la oficial en cuanto esté
+disponible; el contrato que `vida.py` respeta es el de la consigna, no el de la suite propia.
+
+La comprobación se realiza mediante:
 
 ```text
 python3 tests/test_vida.py vida.py
@@ -158,17 +178,18 @@ Subir al repositorio de GitHub del grupo:
 
 Para verificar la aplicación, ejecutar lint y compilación, y probar el flujo completo de cada modelo: envío, respuesta, métricas y persistencia. Comprobar también recuperación del historial, cambio de modelo, fallo de API y fallo de guardado. Las pruebas reales requieren una cuenta de OpenRouter con crédito y `OPENROUTER_API_KEY` configurada en el entorno del servidor.
 
-## 7. Estado inicial y orden de implementación
+## 7. Estado de la implementación
 
-Al redactar esta especificación, existen la estructura de Next.js, el cliente OpenRouter, un endpoint inicial, tipos, una función de procesamiento de métricas y un prompt de sistema todavía no conectado. La página de chat conserva la plantilla inicial y los componentes están vacíos o contienen solo comentarios.
+Los tres ejercicios están implementados y verificados con generaciones reales del 16/09/2026.
 
-No están implementados el guardado de conversaciones, el caché explícito de Claude ni las salidas estructuradas de Gemini. Tampoco están presentes la investigación previa, los logs, el script de Conway, los tests oficiales o el informe. El funcionamiento del endpoint existente queda pendiente de validación.
+- La interfaz sirve los cuatro modelos, muestra el consumo de cada respuesta y persiste un
+  `.md` por conversación en `logs/`, sincronizado con la caché del navegador.
+- Las cuatro capacidades se ejercitan desde la pantalla: esfuerzo de razonamiento, caché
+  explícito con contexto estático, JSON Schema validado y el modelo barato del ejercicio 2.
+- `vida.py` se obtuvo con un único prompt en el primer intento y pasa los nueve tests tal
+  como salió del chat. No hubo corridas quemadas en el ejercicio 2.
+- El informe del ejercicio 3 está en [docs/informe-costos.md](docs/informe-costos.md), con
+  los números reconstruibles desde los logs.
 
-Orden de trabajo:
-
-1. Completar la investigación y verificar modelos y parámetros.
-2. Completar la API, el transporte de métricas y la persistencia Markdown.
-3. Implementar la interfaz y conectarla al historial y a la API.
-4. Probar los cuatro modelos y guardar las evidencias.
-5. Ejecutar los intentos de Conway con los tests oficiales.
-6. Reconciliar los costos y preparar la entrega.
+Queda pendiente contrastar el total contra el dashboard de actividad de OpenRouter, que
+requiere la sesión del grupo y no puede verificarse desde el repositorio.
