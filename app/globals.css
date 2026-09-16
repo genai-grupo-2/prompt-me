@@ -783,6 +783,102 @@ svg {
 .reasoning-options input {
   accent-color: #458fbc;
 }
+.model-options-panel {
+  border-top: 1px solid var(--line);
+  margin-top: 15px;
+  padding-top: 4px;
+}
+.model-options-panel .reasoning-options {
+  border-top: 0;
+  margin-top: 0;
+}
+.capability-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border: 0;
+  margin: 0;
+  padding: 11px 0 2px;
+}
+.capability-panel legend {
+  font-size: 10px;
+  padding: 0 8px 0 0;
+  color: #7a8fa1;
+}
+.capability-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #5b7790;
+}
+.capability-toggle input {
+  accent-color: #458fbc;
+}
+.capability-toggle code {
+  font-size: 10px;
+  background: #f1f6fa;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.capability-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: #7b8a9b;
+}
+.capability-row button {
+  border: 1px solid #e9edf2;
+  background: #fbfcfd;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 10px;
+  color: #4086ae;
+}
+.capability-row button:not(:disabled):hover {
+  background: #edf6fb;
+  border-color: #d2e6f3;
+}
+.capability-panel textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #e9edf2;
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 9px 10px;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #44596b;
+}
+.capability-panel textarea:focus-visible {
+  outline: 2px solid #9ccbe6;
+  outline-offset: 1px;
+}
+.capability-panel:disabled textarea,
+.capability-panel:disabled .capability-row button {
+  opacity: 0.6;
+}
+.capability-row select {
+  border: 1px solid #e9edf2;
+  background: #fbfcfd;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+  color: #4086ae;
+}
+.capability-note {
+  font-size: 10px;
+  color: #8099ac;
+  margin: 0;
+}
+.capability-error {
+  font-size: 10px;
+  color: #b4573f;
+  margin: 0;
+}
 .message-scroll {
   flex: 1;
   overflow-y: auto;

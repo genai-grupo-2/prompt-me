@@ -5,6 +5,9 @@ import ChatLayout from "@/components/chat/ChatLayout";
 import ChatWindow from "@/components/chat/ChatWindow";
 import ChatInput from "@/components/chat/ChatInput";
 import ModelPicker from "@/components/chat/ModelPicker";
+import CapabilityPanel, {
+  DEFAULT_MAX_TOKENS,
+} from "@/components/chat/CapabilityPanel";
 import SideBar from "@/components/sidebar/SideBar";
 import Icon from "@/components/button/Icon";
 import IconButton from "@/components/button/IconButton";
@@ -14,15 +17,38 @@ import { MODELS } from "@/lib/chat/models";
 import {
   EMPTY_CONVERSATION,
   dismissStorageError,
+  hydrate,
   setConversations,
+  syncFromServer,
   useConversations,
 } from "@/lib/chat/browser-store";
 import { conversationMarkdown } from "@/lib/chat/export";
-import type { Conversation } from "@/types/chat";
+import type { Capabilities, Conversation } from "@/types/chat";
 import type { ChatEvent } from "@/types/openrouter";
 
+/**
+ * The server rejects a capability the model does not support, so the request
+ * only carries the ones that belong to the conversation's model.
+ */
+function capabilityOptions(conversation: Conversation) {
+  const staticContext = conversation.staticContext?.trim()
+    ? conversation.staticContext
+    : undefined;
+  return {
+    ...(staticContext ? { staticContext } : {}),
+    ...(conversation.model === "anthropic/claude-haiku-4.5" &&
+    conversation.cache &&
+    staticContext
+      ? { cache: true }
+      : {}),
+    ...(conversation.model === "google/gemini-3.7-flash" && conversation.jsonSchema
+      ? { jsonSchema: conversation.jsonSchema }
+      : {}),
+  };
+}
+
 export default function ChatPage() {
-  const { conversations, ready, storageError } = useConversations();
+  const { conversations, ready, storageError, syncError } = useConversations();
   const [activeId, setActiveId] = useState(EMPTY_CONVERSATION.id);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,10 +58,27 @@ export default function ChatPage() {
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const conversation =
     conversations.find((c) => c.id === activeId) ?? conversations[0];
-  const displayedError = error ?? storageError;
+  const displayedError = error ?? storageError ?? syncError;
   const model = getModel(conversation.model);
 
   useEffect(() => () => abort.current?.abort(), []);
+
+  // logs/ is the graded evidence, so the sidebar mirrors it rather than only
+  // this browser's cache.
+  useEffect(() => {
+    if (!ready) return;
+    const controller = new AbortController();
+    void syncFromServer(controller.signal);
+    return () => controller.abort();
+  }, [ready]);
+
+  const stubServerId = conversation.stub ? conversation.serverId : undefined;
+  useEffect(() => {
+    if (!stubServerId) return;
+    const controller = new AbortController();
+    void hydrate(stubServerId, controller.signal);
+    return () => controller.abort();
+  }, [stubServerId]);
 
   function updateConversation(
     id: string,
@@ -44,6 +87,10 @@ export default function ChatPage() {
     setConversations((items) =>
       items.map((c) => (c.id === id ? update(c) : c)),
     );
+  }
+
+  function updateCapabilities(patch: Partial<Capabilities>) {
+    updateConversation(conversation.id, (c) => ({ ...c, ...patch }));
   }
 
   function newConversation(modelId: ModelId = conversation.model) {
@@ -57,7 +104,7 @@ export default function ChatPage() {
     };
     setConversations((items) => [
       next,
-      ...items.filter((c) => c.messages.length),
+      ...items.filter((c) => c.messages.length || c.stub),
     ]);
     setActiveId(next.id);
     setDraft("");
@@ -67,6 +114,10 @@ export default function ChatPage() {
 
   async function send() {
     if (!draft.trim() || abort.current || !ready) return;
+    if (conversation.stub) {
+      setError("Estamos leyendo esta conversación desde logs/. Probá de nuevo en un instante.");
+      return;
+    }
     if (conversation.messages.length && !conversation.serverId) {
       setError(
         "Este chat pertenece a la versión anterior. Iniciá una conversación nueva para usar el backend actualizado; el historial anterior se conserva.",
@@ -133,10 +184,11 @@ export default function ChatPage() {
             : {}),
           options: {
             model: conversation.model,
-            max_tokens: 8192,
+            max_tokens: conversation.maxTokens ?? DEFAULT_MAX_TOKENS,
             ...(MODELS[conversation.model].efforts.length
               ? { reasoning: { effort: conversation.effort } }
               : {}),
+            ...capabilityOptions(conversation),
           },
         }),
       });
@@ -318,6 +370,14 @@ export default function ChatPage() {
             }
             supportsEffort={MODELS[conversation.model].efforts.length > 0}
             effortOptions={MODELS[conversation.model].efforts}
+            capabilities={
+              <CapabilityPanel
+                model={conversation.model}
+                value={conversation}
+                locked={busy || conversation.messages.length > 0}
+                onChange={updateCapabilities}
+              />
+            }
           />
         }
       />

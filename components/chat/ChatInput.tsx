@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import Icon from "@/components/button/Icon";
 import type { ReasoningConfig } from "@/types/openrouter";
 
@@ -14,6 +14,7 @@ export default function ChatInput({
   onEffortChange,
   supportsEffort,
   effortOptions,
+  capabilities,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -24,6 +25,8 @@ export default function ChatInput({
   onEffortChange: (value: ReasoningConfig["effort"]) => void;
   supportsEffort: boolean;
   effortOptions: NonNullable<ReasoningConfig["effort"]>[];
+  /** Model-specific controls: explicit caching, structured output. */
+  capabilities?: ReactNode;
 }) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [settings, setSettings] = useState(false);
@@ -72,20 +75,22 @@ export default function ChatInput({
         />
         <div className="composer-bottom">
           <div className="composer-tools">
-            {supportsEffort ? (
+            {supportsEffort || capabilities ? (
               <button
                 type="button"
                 className={`effort-button ${settings ? "selected" : ""}`}
                 onClick={() => setSettings(!settings)}
                 aria-expanded={settings}
-                aria-controls="reasoning-options"
+                aria-controls="model-options-panel"
                 disabled={busy}
               >
                 <Icon name="sliders" size={16} />
-                <span>Razonamiento</span>
-                <span className="effort-value">
-                  {effort ? effortLabels[effort] : "Automático"}
-                </span>
+                <span>{supportsEffort ? "Razonamiento" : "Capacidad"}</span>
+                {supportsEffort && (
+                  <span className="effort-value">
+                    {effort ? effortLabels[effort] : "Automático"}
+                  </span>
+                )}
               </button>
             ) : (
               <span className="composer-hint">
@@ -116,25 +121,26 @@ export default function ChatInput({
             )}
           </div>
         </div>
-        {settings && supportsEffort && (
-          <fieldset
-            className="reasoning-options"
-            id="reasoning-options"
-            disabled={busy}
-          >
-            <legend>Esfuerzo de razonamiento</legend>
-            {effortOptions.map((level) => (
-              <label key={level}>
-                <input
-                  type="radio"
-                  name="effort"
-                  checked={effort === level}
-                  onChange={() => onEffortChange(level)}
-                />
-                {effortLabels[level]}
-              </label>
-            ))}
-          </fieldset>
+        {settings && (supportsEffort || capabilities) && (
+          <div className="model-options-panel" id="model-options-panel">
+            {supportsEffort && (
+              <fieldset className="reasoning-options" disabled={busy}>
+                <legend>Esfuerzo de razonamiento</legend>
+                {effortOptions.map((level) => (
+                  <label key={level}>
+                    <input
+                      type="radio"
+                      name="effort"
+                      checked={effort === level}
+                      onChange={() => onEffortChange(level)}
+                    />
+                    {effortLabels[level]}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            {capabilities}
+          </div>
         )}
       </form>
       <p className="composer-footnote">

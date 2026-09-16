@@ -23,10 +23,11 @@ export default function SideBar({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const visible = conversations.filter(
-    (c) =>
-      c.messages.length &&
-      c.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+  // A stub is a log read from the server whose messages have not been fetched
+  // yet: it belongs in the list even though it carries no messages here.
+  const saved = conversations.filter((c) => c.messages.length || c.stub);
+  const visible = saved.filter((c) =>
+    c.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
   );
   return (
     <>
@@ -57,7 +58,7 @@ export default function SideBar({
       </label>
       <div className="sidebar-section-label">
         TUS CONVERSACIONES{" "}
-        <span>{conversations.filter((c) => c.messages.length).length}</span>
+        <span>{saved.length}</span>
       </div>
       <nav className="conversation-list" aria-label="Conversaciones">
         {visible.map((conversation) => (
